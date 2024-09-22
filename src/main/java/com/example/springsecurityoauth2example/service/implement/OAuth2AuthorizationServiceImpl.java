@@ -52,24 +52,21 @@ public class OAuth2AuthorizationServiceImpl extends BaseOAuth2Service implements
     public void save(OAuth2Authorization authorization) {
         Assert.notNull(authorization, "authorization can't be null");
 
-        try {
-            authorizationRepository.save(oauth2ToEntity(authorization))
-                    .subscribe(
-                            value -> log.info("saved {}", value.getId())
-                    );
-        } catch (IllegalAccessException ex) {
-            log.error("saving error");
-            throw new RuntimeException(ex.getMessage(), ex);
-        }
+        authorizationRepository.save(oauth2ToEntity(authorization))
+                .doOnSuccess(
+                        value -> log.info("saved {}", value.getId())
+                )
+                .subscribe();
     }
 
     @Override
     public void remove(OAuth2Authorization authorization) {
         Assert.notNull(authorization, "authorization can't be null");
 
-        log.info("removing {}", authorization.getId());
-
         authorizationRepository.deleteById(authorization.getId())
+                .doOnSuccess(
+                        value -> log.info("removed {}", authorization.getId())
+                )
                 .subscribe();
     }
 
@@ -78,7 +75,7 @@ public class OAuth2AuthorizationServiceImpl extends BaseOAuth2Service implements
         Assert.hasText(id, "id can't be empty");
 
         return authorizationRepository.findById(id)
-                .map(this::entityToOAuth2Authorization)
+                .flatMap(entry -> Mono.just(this.entityToOAuth2Authorization(entry)))
                 .block();
     }
 
@@ -122,7 +119,7 @@ public class OAuth2AuthorizationServiceImpl extends BaseOAuth2Service implements
                 .build();
     }
 
-    private Authorization oauth2ToEntity(OAuth2Authorization authorization) throws IllegalAccessException {
+    private Authorization oauth2ToEntity(OAuth2Authorization authorization) {
         OAuth2Authorization.Token<OAuth2AccessToken> token = getOAuth2Token(authorization);
         OAuth2AccessToken accessToken = getOAuth2AccessToken(authorization);
         OAuth2RefreshToken refreshToken = getOAuth2RefreshToken(authorization);
@@ -146,10 +143,10 @@ public class OAuth2AuthorizationServiceImpl extends BaseOAuth2Service implements
                 .build();
     }
 
-    private OAuth2Authorization.Token<OAuth2AccessToken> getOAuth2Token(OAuth2Authorization authorization) throws IllegalAccessException {
+    private OAuth2Authorization.Token<OAuth2AccessToken> getOAuth2Token(OAuth2Authorization authorization) {
         OAuth2Authorization.Token<OAuth2AccessToken> accessToken = authorization.getToken(OAuth2AccessToken.class);
         if (Objects.isNull(accessToken)) {
-            throw new IllegalAccessException("Access token not found");
+            throw new IllegalArgumentException("Access token not found");
         }
 
         return accessToken;
@@ -163,19 +160,19 @@ public class OAuth2AuthorizationServiceImpl extends BaseOAuth2Service implements
         );
     }
 
-    private OAuth2AccessToken getOAuth2AccessToken(OAuth2Authorization authorization) throws IllegalAccessException {
+    private OAuth2AccessToken getOAuth2AccessToken(OAuth2Authorization authorization) {
         OAuth2Authorization.Token<OAuth2AccessToken> accessToken = authorization.getToken(OAuth2AccessToken.class);
         if (Objects.isNull(accessToken)) {
-            throw new IllegalAccessException("Access token not found");
+            throw new IllegalArgumentException("Access token not found");
         }
 
         return accessToken.getToken();
     }
 
-    private OAuth2RefreshToken getOAuth2RefreshToken(OAuth2Authorization authorization) throws IllegalAccessException {
+    private OAuth2RefreshToken getOAuth2RefreshToken(OAuth2Authorization authorization) {
         OAuth2Authorization.Token<OAuth2RefreshToken> refreshToken = authorization.getToken(OAuth2RefreshToken.class);
         if (Objects.isNull(refreshToken)) {
-            throw new IllegalAccessException("Refresh token not found");
+            throw new IllegalArgumentException("Refresh token not found");
         }
 
         return refreshToken.getToken();
