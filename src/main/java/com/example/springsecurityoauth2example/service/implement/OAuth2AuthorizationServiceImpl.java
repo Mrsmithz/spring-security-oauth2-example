@@ -88,22 +88,18 @@ public class OAuth2AuthorizationServiceImpl extends BaseOAuth2Service implements
 
         if (Objects.isNull(tokenType)) {
             return authorizationRepository.findByAccessTokenValueOrRefreshTokenValue(token, token)
-                    .map(this::entityToOAuth2Authorization)
+                    .flatMap(entry -> Mono.just(this.entityToOAuth2Authorization(entry)))
                     .block();
         } else if (OAuth2ParameterNames.ACCESS_TOKEN.equals(tokenType.getValue())) {
             return authorizationRepository.findByAccessTokenValue(token)
-                    .map(this::entityToOAuth2Authorization)
+                    .flatMap(entry -> Mono.just(this.entityToOAuth2Authorization(entry)))
                     .block();
         } else if (OAuth2ParameterNames.REFRESH_TOKEN.equals(tokenType.getValue())) {
             Mono<Authorization> authorization = authorizationRepository.findByRefreshTokenValue(token);
             return authorization
-                    .filter(entry -> {
-                        if (entry.getTokenStatus().equals(TokenStatus.INACTIVE)) {
-                            throw new OAuth2AuthenticationException(String.valueOf(HttpStatus.UNAUTHORIZED));
-                        }
-                        return true;
-                    })
-                    .map(this::entityToOAuth2Authorization)
+                    .filter(entry -> !entry.getTokenStatus().equals(TokenStatus.INACTIVE))
+                    .switchIfEmpty(Mono.error(new OAuth2AuthenticationException(String.valueOf(HttpStatus.UNAUTHORIZED.value()))))
+                    .flatMap(entry -> Mono.just(this.entityToOAuth2Authorization(entry)))
                     .block();
         }
         return null;

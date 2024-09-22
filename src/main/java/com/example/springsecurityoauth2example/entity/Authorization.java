@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -13,6 +14,7 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import java.time.Instant;
 
 @Getter
+@Setter
 @Builder
 @Document(collection = "authorization")
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
