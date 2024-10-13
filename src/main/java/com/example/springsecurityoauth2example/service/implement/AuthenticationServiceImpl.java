@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
+
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -19,19 +20,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public void revokeToken(String accessToken) {
-        Mono<Authorization> authorization = authorizationRepository.findByAccessTokenValueAndTokenStatus(accessToken, TokenStatus.ACTIVE);
-        authorization
-                .switchIfEmpty(Mono.error(new IllegalArgumentException(String.format("access token %s not found", accessToken))))
-                .flatMap(entry -> {
-                    entry.setTokenStatus(TokenStatus.INACTIVE);
-                    entry.setAccessTokenMetadata(updateMetaData(entry.getAccessTokenMetadata()));
-                    return Mono.just(entry);
-                })
-                .flatMap(authorizationRepository::save)
-                .doOnSuccess(
-                        value -> log.info("revoke token {} successfully", accessToken)
-                )
-                .subscribe();
+        Authorization authorization = authorizationRepository.findByAccessTokenValueAndTokenStatus(accessToken, TokenStatus.ACTIVE);
+        if (Objects.isNull(authorization)) {
+            throw new IllegalArgumentException(String.format("access token %s not found", accessToken));
+        } else {
+            authorization.setTokenStatus(TokenStatus.INACTIVE);
+            authorization.setAccessTokenMetadata(updateMetaData(authorization.getAccessTokenMetadata()));
+            authorizationRepository.save(authorization);
+            log.info("revoke token {} successfully", accessToken);
+        }
     }
 
     private String updateMetaData(String metaDataString) {

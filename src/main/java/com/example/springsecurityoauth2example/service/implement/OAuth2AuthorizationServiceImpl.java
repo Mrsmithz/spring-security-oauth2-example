@@ -24,7 +24,6 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -52,31 +51,27 @@ public class OAuth2AuthorizationServiceImpl extends BaseOAuth2Service implements
     public void save(OAuth2Authorization authorization) {
         Assert.notNull(authorization, "authorization can't be null");
 
-        authorizationRepository.save(oauth2ToEntity(authorization))
-                .doOnSuccess(
-                        value -> log.info("saved {}", value.getId())
-                )
-                .subscribe();
+        authorizationRepository.save(oauth2ToEntity(authorization));
+        log.info("saved {}", authorization.getId());
     }
 
     @Override
     public void remove(OAuth2Authorization authorization) {
         Assert.notNull(authorization, "authorization can't be null");
 
-        authorizationRepository.deleteById(authorization.getId())
-                .doOnSuccess(
-                        value -> log.info("removed {}", authorization.getId())
-                )
-                .subscribe();
+        authorizationRepository.deleteById(authorization.getId());
+        log.info("removed {}", authorization.getId());
     }
 
     @Override
     public OAuth2Authorization findById(String id) {
         Assert.hasText(id, "id can't be empty");
 
-        return authorizationRepository.findById(id)
-                .flatMap(entry -> Mono.just(this.entityToOAuth2Authorization(entry)))
-                .block();
+        Authorization authorization = authorizationRepository.findById(id)
+                .orElse(null);
+        Assert.notNull(authorization, "id not found");
+
+        return entityToOAuth2Authorization(authorization);
     }
 
     @Override
@@ -84,20 +79,16 @@ public class OAuth2AuthorizationServiceImpl extends BaseOAuth2Service implements
         Assert.hasText(token, "token can't be empty");
 
         if (Objects.isNull(tokenType)) {
-            return authorizationRepository.findByAccessTokenValueOrRefreshTokenValue(token, token)
-                    .flatMap(entry -> Mono.just(this.entityToOAuth2Authorization(entry)))
-                    .block();
+            return entityToOAuth2Authorization(authorizationRepository.findByAccessTokenValueOrRefreshTokenValue(token, token));
         } else if (OAuth2ParameterNames.ACCESS_TOKEN.equals(tokenType.getValue())) {
-            return authorizationRepository.findByAccessTokenValue(token)
-                    .flatMap(entry -> Mono.just(this.entityToOAuth2Authorization(entry)))
-                    .block();
+            return entityToOAuth2Authorization(authorizationRepository.findByAccessTokenValue(token));
         } else if (OAuth2ParameterNames.REFRESH_TOKEN.equals(tokenType.getValue())) {
-            Mono<Authorization> authorization = authorizationRepository.findByRefreshTokenValue(token);
-            return authorization
-                    .filter(entry -> !entry.getTokenStatus().equals(TokenStatus.INACTIVE))
-                    .switchIfEmpty(Mono.error(new OAuth2AuthenticationException(String.valueOf(HttpStatus.UNAUTHORIZED.value()))))
-                    .flatMap(entry -> Mono.just(this.entityToOAuth2Authorization(entry)))
-                    .block();
+            Authorization authorization = authorizationRepository.findByRefreshTokenValue(token);
+            if (TokenStatus.INACTIVE.equals(authorization.getTokenStatus())) {
+                throw new OAuth2AuthenticationException(String.valueOf(HttpStatus.UNAUTHORIZED.value()));
+            } else {
+                return entityToOAuth2Authorization(authorization);
+            }
         }
         return null;
     }

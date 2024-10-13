@@ -15,7 +15,6 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Mono;
 
 import java.util.Objects;
 import java.util.Set;
@@ -33,12 +32,11 @@ public class ClientRegistrationRepository implements RegisteredClientRepository 
     public void save(RegisteredClient registeredClient) {
         try {
             Oauth2RegisteredClient entity = registeredClientToEntity(registeredClient);
-            Mono<Oauth2RegisteredClient> savedEntity = oauth2RegisteredClientRepository.save(entity);
+            Oauth2RegisteredClient savedEntity = oauth2RegisteredClientRepository.save(entity);
             redisCacheHelper.putRegisteredClientCache(registeredClient);
 
-            savedEntity.subscribe(
-                    value -> log.info("clientId: {} saved successfully", value.getClientId())
-            );
+            log.info("clientId: {} saved successfully", savedEntity.getClientId());
+
         } catch (DuplicateKeyException ex) {
             log.error("clientId: {} is already exists", registeredClient.getClientId());
             throw new OAuth2AuthenticationException(
@@ -56,7 +54,8 @@ public class ClientRegistrationRepository implements RegisteredClientRepository 
 
     @Override
     public RegisteredClient findById(String id) {
-        Oauth2RegisteredClient entity = oauth2RegisteredClientRepository.findById(id).block();
+        Oauth2RegisteredClient entity = oauth2RegisteredClientRepository.findById(id)
+                .orElse(null);
         if (Objects.nonNull(entity)) {
             log.info("found id {}", id);
             return entityToRegisteredClient(entity);
@@ -67,7 +66,7 @@ public class ClientRegistrationRepository implements RegisteredClientRepository 
 
     @Override
     public RegisteredClient findByClientId(String clientId) {
-        Oauth2RegisteredClient entity = redisCacheHelper.findOauth2RegisteredClientByClientId(clientId).block();
+        Oauth2RegisteredClient entity = redisCacheHelper.findOauth2RegisteredClientByClientId(clientId);
         if (Objects.nonNull(entity)) {
             log.info("found clientId {}", clientId);
             return entityToRegisteredClient(entity);

@@ -9,7 +9,6 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 
 @Slf4j
 @Component
@@ -25,7 +24,7 @@ public class RedisCacheHelper {
     }
 
     @Cacheable(value = CacheConstant.REGISTERED_CLIENT_CACHE_NAME, key = "#clientId", cacheManager = CacheConstant.REDIS_CACHE_MANAGER_NAME, unless = "#result==null")
-    public Mono<Oauth2RegisteredClient> findOauth2RegisteredClientByClientId(String clientId) {
+    public Oauth2RegisteredClient findOauth2RegisteredClientByClientId(String clientId) {
         return oauth2RegisteredClientRepository.findByClientId(clientId);
     }
 }
