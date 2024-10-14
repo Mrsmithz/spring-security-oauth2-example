@@ -5,6 +5,7 @@ import com.example.springsecurityoauth2example.entity.Oauth2RegisteredClient;
 import com.mongodb.DuplicateKeyException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -18,6 +19,8 @@ import org.springframework.util.StringUtils;
 
 import java.util.Objects;
 import java.util.Set;
+
+import static com.example.springsecurityoauth2example.constant.CacheConstant.REGISTERED_CLIENT_CACHE_NAME;
 
 @Slf4j
 @Component
@@ -65,6 +68,7 @@ public class ClientRegistrationRepository implements RegisteredClientRepository 
     }
 
     @Override
+    @Cacheable(value = REGISTERED_CLIENT_CACHE_NAME, key = "#clientId", cacheManager = "jcache", unless = "#result==null")
     public RegisteredClient findByClientId(String clientId) {
         Oauth2RegisteredClient entity = redisCacheHelper.findOauth2RegisteredClientByClientId(clientId);
         if (Objects.nonNull(entity)) {

@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AdditionalClaims {
-    
+
     private Boolean emailVerified;
     private String name;
     private String familyName;

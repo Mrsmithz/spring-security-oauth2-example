@@ -22,5 +22,5 @@ public class BaseProvider {
 
         throw new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_CLIENT);
     }
-    
+
 }

@@ -1,6 +1,5 @@
 package com.example.springsecurityoauth2example.authentication;
 
-import com.example.springsecurityoauth2example.constant.Constant;
 import com.example.springsecurityoauth2example.model.authentication.AdditionalClaims;
 import com.example.springsecurityoauth2example.model.authentication.UserDetail;
 import com.example.springsecurityoauth2example.model.google.GoogleUserProfile;
