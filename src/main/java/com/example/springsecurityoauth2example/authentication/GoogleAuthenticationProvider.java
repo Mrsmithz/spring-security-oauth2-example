@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class GoogleAuthenticationProvider implements AuthenticationProvider {
+public class GoogleAuthenticationProvider extends BaseProvider implements AuthenticationProvider {
 
     private final OAuth2AuthorizationService oAuth2AuthorizationService;
     private final GoogleService googleService;
@@ -160,20 +160,6 @@ public class GoogleAuthenticationProvider implements AuthenticationProvider {
     @Override
     public boolean supports(Class<?> authentication) {
         return GoogleAuthenticationToken.class.isAssignableFrom(authentication);
-    }
-
-    private OAuth2ClientAuthenticationToken getAuthenticatedClient(Authentication authentication) {
-        if (OAuth2ClientAuthenticationToken.class.isAssignableFrom(authentication.getPrincipal().getClass())) {
-            OAuth2ClientAuthenticationToken clientPrincipal = (OAuth2ClientAuthenticationToken) authentication.getPrincipal();
-
-            if (Objects.nonNull(clientPrincipal) && clientPrincipal.isAuthenticated()) {
-                return clientPrincipal;
-            } else {
-                throw new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_CLIENT);
-            }
-        }
-
-        throw new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_CLIENT);
     }
 
     private boolean clientSupportGrantType(RegisteredClient registeredClient) {
