@@ -12,6 +12,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.*;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
@@ -54,7 +55,7 @@ public class GoogleAuthenticationProvider extends BaseProvider implements Authen
         }
 
         Map<String, Object> additionalParameters = googleAuthenticationToken.getAdditionalParameters();
-        String googleIdToken = (String) additionalParameters.get(Constant.AUTHORIZE_CODE);
+        String googleIdToken = (String) additionalParameters.get(OAuth2ParameterNames.CODE);
 
         GoogleUserProfile googleUserProfile;
         try {
